@@ -1,0 +1,6 @@
+{
+  "name": "FPV Tactical Ops: Asedio en Trinchera",
+  "description": "Simulador táctico 3D en primera persona de dron FPV en asedio de trincheras con IA de cobertura, balística realista, escuadrón aliado y soporte completo para mando DualSense/PS4.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

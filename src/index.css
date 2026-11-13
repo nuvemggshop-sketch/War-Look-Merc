@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+:root {
+  --bg-obsidian: #080a0c;
+  --surface-panel: rgba(11, 14, 18, 0.88);
+  --surface-modal: rgba(13, 17, 21, 0.95);
+  --border-hairline: rgba(148, 163, 184, 0.22);
+  --accent-amber: #f57c00;
+  --accent-red: #ef4444;
+  --accent-emerald: #10b981;
+  --accent-cyan: #22d3ee;
+  --text-primary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --font-display: 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--bg-obsidian);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono-tech {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.fpv-scanlines {
+  background:
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.24) 50%),
+    linear-gradient(90deg, rgba(245, 124, 0, 0.02), rgba(16, 185, 129, 0.015));
+  background-size: 100% 4px, 100% 100%;
+  opacity: 0.45;
+}
+
+.fpv-vignette {
+  box-shadow: inset 0 0 160px rgba(0, 0, 0, 0.65);
+}
+
+.fpv-thermal-tint {
+  background: radial-gradient(
+    circle at center,
+    rgba(16, 185, 129, 0.06) 0%,
+    rgba(6, 78, 59, 0.22) 72%,
+    rgba(2, 24, 18, 0.55) 100%
+  );
+}
+
+.fpv-damage-flash {
+  box-shadow:
+    inset 0 0 150px rgba(239, 68, 68, 0.85),
+    inset 0 0 36px rgba(249, 115, 22, 0.55);
+}
+
+@keyframes hitPop {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
+.hitmarker-pop {
+  animation: hitPop 0.22s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hitmarker-pop {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,528 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+    --bg-dark: #080a0b;
+    --panel-bg: rgba(12, 15, 17, 0.95);
+    --border-color: #2e3639;
+    --accent-orange: #ff5e00;
+    --accent-red: #ff2222;
+    --accent-green: #00ff66;
+    --accent-cyan: #00ffcc;
+    --text-main: #d0d7dc;
+    --text-muted: #78858a;
+    --font-display: 'Orbitron', 'Rajdhani', 'Segoe UI', sans-serif;
+    --font-body: 'Rajdhani', 'Segoe UI', sans-serif;
+    --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: var(--font-body); }
+body, html {
+    width: 100%; height: 100%; overflow: hidden; color: var(--text-main);
+    background:
+        radial-gradient(circle at 50% 0%, rgba(255, 94, 0, 0.12), transparent 55%),
+        radial-gradient(circle at 50% 100%, rgba(0, 255, 102, 0.05), transparent 45%),
+        var(--bg-dark);
+}
+
+h1, h2, h3, h4, .value, .btn-tactical, .header-tag, .squad-header,
+.hud-box .label, .radar-label, .kb-tag, .trench-squad-badge {
+    font-family: var(--font-display);
+}
+.label, .sub-label, .squad-status, .kf-item, .radio-header, #radio-text,
+.telemetry-row, .telemetry-stats, .stat-item span, .control-card p,
+.mission-objectives li, .briefing-text, .tactical-tip {
+    font-family: var(--font-body);
+}
+#hud-score, #hud-time, #hud-targets, #hud-alt, #hud-spd, #hud-drones, #hud-enemies {
+    font-family: var(--font-display);
+}
+
+#canvas-container { position: fixed; inset: 0; z-index: 1; }
+#fpv-overlay { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
+#fpv-overlay::after {
+    content: ''; position: absolute; inset: 0;
+    box-shadow: inset 0 0 190px rgba(0, 0, 0, 0.62);
+}
+
+.scanlines {
+    width: 100%; height: 100%;
+    background:
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.32) 50%),
+        linear-gradient(90deg, rgba(255, 94, 0, 0.025), rgba(0, 255, 102, 0.02));
+    background-size: 100% 4px, 100% 100%;
+    opacity: 0.5;
+    animation: scanDrift 8s linear infinite;
+}
+@keyframes scanDrift {
+    from { background-position: 0 0, 0 0; }
+    to { background-position: 0 40px, 0 0; }
+}
+
+#damage-vignette {
+    position: absolute; inset: 0;
+    box-shadow: inset 0 0 80px rgba(255, 25, 0, 0);
+    transition: box-shadow 0.12s ease-out;
+}
+#damage-vignette.hit {
+    box-shadow: inset 0 0 150px rgba(255, 25, 0, 0.92), inset 0 0 40px rgba(255, 120, 60, 0.7);
+    animation: damagePulse 0.18s ease-out;
+}
+@keyframes damagePulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.55; }
+    100% { opacity: 1; }
+}
+
+#static-screen {
+    position: absolute; inset: 0; background: rgba(5, 7, 8, 0.92);
+    display: flex; align-items: center; justify-content: center; z-index: 12; pointer-events: none;
+}
+.static-noise {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.12) 1px, transparent 0);
+    background-size: 5px 5px; animation: staticMove 0.12s infinite;
+}
+@keyframes staticMove {
+    0% { transform: translate(0, 0); }
+    50% { transform: translate(-2px, 3px); }
+    100% { transform: translate(3px, -2px); }
+}
+
+/* Transmisión de Radio ubicada en la PARTE INFERIOR */
+#radio-transmission {
+    position: fixed; bottom: 105px; left: 0; right: 0;
+    display: flex; justify-content: center; z-index: 15; pointer-events: none;
+}
+.radio-box {
+    background: rgba(10, 14, 16, 0.92);
+    border: 1px solid var(--accent-orange);
+    border-left: 4px solid var(--accent-orange);
+    padding: 12px 22px; max-width: 650px; width: 90%;
+    box-shadow: 0 4px 25px rgba(0,0,0,0.85);
+    animation: radioSlide 0.3s ease-out;
+}
+@keyframes radioSlide {
+    from { transform: translateY(15px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.radio-header { font-size: 0.72rem; color: var(--accent-orange); letter-spacing: 1px; display: block; margin-bottom: 3px; }
+#radio-text { color: #fff; font-size: 0.95rem; font-weight: bold; }
+
+/* Cámara de trinchera: deja ver la escena 3D y el panel queda abajo */
+#trench-prompt {
+    position: fixed; inset: 0; z-index: 20;
+    background: linear-gradient(to top, rgba(4, 6, 7, 0.94) 0%, rgba(4, 6, 7, 0.55) 30%, rgba(4, 6, 7, 0) 62%);
+    display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+    padding: 20px 20px 34px; pointer-events: none;
+}
+.trench-box {
+    pointer-events: auto;
+    background: var(--panel-bg); border: 1px solid var(--border-color); border-top: 4px solid var(--accent-orange);
+    max-width: 720px; width: 100%; padding: 18px 22px; text-align: left;
+    box-shadow: 0 0 40px rgba(0,0,0,0.9); animation: trenchRise 0.25s ease-out;
+}
+@keyframes trenchRise {
+    from { transform: translateY(18px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.trench-box-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+.trench-box h2 { color: var(--accent-orange); font-size: 1.08rem; }
+.trench-squad-badge { font-size: 0.7rem; letter-spacing: 1px; color: var(--accent-green); white-space: nowrap; }
+.trench-box p { color: var(--text-muted); font-size: 0.86rem; margin-bottom: 14px; line-height: 1.4; }
+.trench-box .btn-tactical { padding: 12px; font-size: 0.95rem; }
+.trench-box .trench-hint { margin: 9px 0 0; text-align: center; font-size: 0.7rem; color: #6f7c80; }
+
+/* Notificaciones de baja y Killfeed */
+#combat-notifications { position: fixed; top: 20px; left: 0; right: 0; z-index: 8; pointer-events: none; display: flex; flex-direction: column; align-items: center; }
+#kill-banner {
+    background: rgba(255, 34, 34, 0.28); border: 1px solid var(--accent-red); border-left: 5px solid var(--accent-red);
+    padding: 6px 18px; display: flex; align-items: center; gap: 10px; animation: popBanner 0.2s ease-out;
+}
+@keyframes popBanner { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.kb-tag { background: var(--accent-red); color: #fff; font-weight: bold; padding: 2px 6px; font-size: 0.75rem; }
+#kb-text { color: #fff; font-weight: bold; font-size: 0.9rem; }
+
+#killfeed-list { position: fixed; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+.kf-item { background: rgba(10, 13, 14, 0.85); border-right: 3px solid var(--accent-orange); padding: 4px 9px; font-size: 0.74rem; color: #ddd; }
+.kf-item.ally { border-right-color: var(--accent-green); color: #bfffd4; }
+
+/* HUD Táctico */
+#hud { position: fixed; inset: 0; z-index: 5; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 18px; }
+.hidden { display: none !important; }
+
+.hud-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.hud-box {
+    position: relative;
+    background: linear-gradient(145deg, rgba(14, 18, 20, 0.9), rgba(8, 11, 12, 0.78));
+    border: 1px solid var(--border-color); border-left: 3px solid var(--accent-orange);
+    padding: 9px 15px; display: flex; flex-direction: column; min-width: 195px;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    animation: panelIn 0.35s ease-out backwards;
+}
+.hud-box::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 94, 0, 0.65), transparent);
+}
+.hud-box.center-box { border-left: 1px solid var(--border-color); border-top: 3px solid var(--accent-red); align-items: center; animation-delay: 0.06s; }
+.hud-box.center-box::after { background: linear-gradient(90deg, transparent, rgba(255, 34, 34, 0.65), transparent); }
+.hud-box.right-box { border-left: 1px solid var(--border-color); border-right: 3px solid var(--accent-green); align-items: flex-end; animation-delay: 0.12s; }
+.hud-box.right-box::after { background: linear-gradient(90deg, transparent, rgba(0, 255, 102, 0.65), transparent); }
+
+.hud-box .label { font-size: 0.66rem; color: var(--text-muted); letter-spacing: 1.6px; }
+.hud-box .value { font-size: 1.45rem; font-weight: 700; color: #fff; margin: 2px 0; text-shadow: 0 0 12px rgba(255, 255, 255, 0.18); }
+.hud-box .value.warning { color: var(--accent-orange); text-shadow: 0 0 14px rgba(255, 94, 0, 0.45); }
+.hud-box .sub-label { font-size: 0.68rem; color: var(--accent-green); letter-spacing: 0.6px; }
+.threat-line { margin-top: 3px; color: #ff9a5a !important; }
+.threat-line.heavy { color: var(--accent-red) !important; animation: threatBlink 0.65s infinite alternate; }
+@keyframes threatBlink { from { opacity: 0.55; } to { opacity: 1; } }
+
+.drone-icons { display: flex; gap: 4px; margin: 5px 0; flex-wrap: wrap; justify-content: flex-end; }
+.d-icon {
+    width: 14px; height: 8px; border: 1px solid #555; background: #15181a;
+    transform: skewX(-18deg); transition: all 0.2s ease;
+}
+.d-icon.active { background: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 7px rgba(0, 255, 102, 0.7); }
+.d-icon.current { background: var(--accent-orange); border-color: var(--accent-orange); box-shadow: 0 0 9px rgba(255, 94, 0, 0.9); animation: iconPulse 1.1s infinite alternate; }
+@keyframes iconPulse { from { opacity: 0.55; } to { opacity: 1; } }
+
+/* Modo trinchera: no hay dron activo, así que se oculta la telemetría de vuelo */
+#hud.trench-mode #crosshair,
+#hud.trench-mode .hud-telemetry,
+#hud.trench-mode .radar-container { display: none; }
+#hud.trench-mode .hud-center { justify-content: flex-start; padding-top: 148px; }
+#hud.trench-mode .hud-top { opacity: 0.92; }
+
+/* Panel del escuadrón amigo */
+#squad-panel {
+    position: absolute; left: 18px; top: 112px;
+    background: rgba(10, 14, 16, 0.72); border: 1px solid var(--border-color); border-left: 3px solid var(--accent-green);
+    padding: 8px 12px; min-width: 198px;
+}
+.squad-header {
+    display: flex; justify-content: space-between; gap: 12px;
+    font-size: 0.68rem; letter-spacing: 1px; color: var(--accent-green); margin-bottom: 6px;
+}
+.squad-header span { color: #fff; }
+#squad-list { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+#squad-list li { display: flex; align-items: center; gap: 7px; font-size: 0.7rem; color: #c8d2d6; }
+.squad-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); flex: 0 0 auto; }
+.squad-name { white-space: nowrap; }
+.squad-status { margin-left: auto; font-size: 0.6rem; color: var(--accent-green); }
+#squad-list li.down { color: #6b7478; }
+#squad-list li.down .squad-dot { background: var(--accent-red); box-shadow: none; }
+#squad-list li.down .squad-status { color: var(--accent-red); }
+
+.hud-center { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#crosshair { position: relative; width: 55px; height: 55px; }
+.ch-line { position: absolute; background: rgba(0, 255, 102, 0.8); }
+.ch-line.top { width: 2px; height: 11px; top: 0; left: 26px; }
+.ch-line.bottom { width: 2px; height: 11px; bottom: 0; left: 26px; }
+.ch-line.left { width: 11px; height: 2px; left: 0; top: 26px; }
+.ch-line.right { width: 11px; height: 2px; right: 0; top: 26px; }
+.ch-dot { position: absolute; width: 4px; height: 4px; background: var(--accent-orange); border-radius: 50%; top: 25px; left: 25px; }
+
+#warning-alert {
+    margin-top: 25px; background: rgba(255, 34, 34, 0.28); border: 1px solid var(--accent-red);
+    color: #ff9999; padding: 5px 12px; font-size: 0.82rem; font-weight: bold; animation: blink 0.5s infinite alternate;
+}
+#extraction-alert {
+    margin-top: 15px; background: rgba(0, 255, 102, 0.22); border: 1px solid var(--accent-green);
+    color: var(--accent-green); padding: 6px 14px; font-size: 0.88rem; font-weight: bold;
+}
+@keyframes blink { from { opacity: 0.35; } to { opacity: 1; } }
+
+.hud-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+.hud-telemetry { background: rgba(10, 14, 16, 0.8); border: 1px solid var(--border-color); padding: 12px 16px; width: 325px; }
+.telemetry-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; font-size: 0.78rem; }
+.bar-container { width: 130px; height: 9px; background: #16191b; border: 1px solid #42494c; margin: 0 8px; }
+.bar-fill { height: 100%; width: 100%; transition: width 0.1s linear; }
+.bar-fill.hp { background: var(--accent-green); }
+.bar-fill.bat { background: var(--accent-orange); }
+
+.telemetry-stats { display: flex; justify-content: space-between; margin-top: 9px; padding-top: 7px; border-top: 1px solid #23282a; font-size: 0.75rem; }
+.telemetry-stats strong { color: var(--accent-orange); }
+
+.radar-container { display: flex; flex-direction: column; align-items: center; background: rgba(10, 14, 16, 0.85); border: 1px solid var(--border-color); padding: 7px; }
+#minimap { border-radius: 50%; border: 1px solid #424c50; background: #060808; }
+.radar-label { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; letter-spacing: 1px; }
+
+/* Modales */
+.modal-screen { position: fixed; inset: 0; z-index: 25; background: rgba(5, 7, 8, 0.95); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal-content { background: var(--panel-bg); border: 1px solid var(--border-color); border-top: 4px solid var(--accent-orange); max-width: 760px; width: 100%; padding: 26px; box-shadow: 0 0 45px rgba(0,0,0,0.95); }
+.header-tag { color: var(--accent-orange); font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 6px; }
+h1 { font-size: 1.7rem; color: #fff; margin-bottom: 12px; }
+.briefing-text { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 16px; }
+
+.mission-objectives { background: rgba(0, 0, 0, 0.4); border: 1px solid #252b2d; padding: 13px; margin-bottom: 16px; }
+.mission-objectives h3 { font-size: 0.86rem; color: var(--accent-orange); margin-bottom: 8px; }
+.mission-objectives ul { list-style: none; }
+.mission-objectives li { font-size: 0.84rem; margin-bottom: 7px; display: flex; align-items: center; gap: 10px; }
+.squad-note { margin-top: 9px; padding-top: 8px; border-top: 1px solid #252b2d; font-size: 0.72rem; color: var(--accent-green); line-height: 1.4; }
+
+.tag { display: inline-block; padding: 2px 7px; font-weight: bold; font-size: 0.74rem; color: #000; }
+.tag.red { background: var(--accent-red); color: #fff; }
+.tag.orange { background: var(--accent-orange); }
+.tag.green { background: var(--accent-green); }
+
+.controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.control-card { background: rgba(18, 22, 24, 0.8); border: 1px solid #2c3336; padding: 11px; }
+.control-card h4 { color: var(--accent-orange); font-size: 0.82rem; margin-bottom: 7px; border-bottom: 1px solid #2c3235; padding-bottom: 4px; }
+.control-card p { font-size: 0.75rem; color: #ccc; margin-bottom: 4px; }
+
+.gamepad-status-box { display: flex; align-items: center; gap: 10px; background: #0c0f10; border: 1px solid #23292b; padding: 9px 14px; margin-bottom: 18px; font-size: 0.8rem; }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; background: #555; }
+.status-dot.connected { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+
+.btn-tactical { width: 100%; padding: 14px; background: var(--accent-orange); color: #000; font-weight: bold; font-size: 1.05rem; border: none; cursor: pointer; letter-spacing: 2px; }
+.btn-tactical:hover { background: #ff7315; }
+
+.stats-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 18px 0; }
+.stat-item { background: rgba(0, 0, 0, 0.45); border: 1px solid #2d3437; padding: 12px; display: flex; flex-direction: column; }
+.stat-item span { font-size: 0.74rem; color: var(--text-muted); }
+.stat-item strong { font-size: 1.4rem; margin-top: 4px; }
+.stat-item.highlight { border-color: var(--accent-orange); }
+.stat-item.highlight strong { color: var(--accent-orange); }
+
+/* =========================================================
+   Estados del escuadrón
+   ========================================================= */
+#squad-list li.engaged {
+    color: #eafff1;
+}
+#squad-list li.engaged .squad-dot {
+    background: var(--accent-cyan);
+    box-shadow: 0 0 9px var(--accent-cyan);
+    animation: squadEngaged 0.6s infinite alternate;
+}
+#squad-list li.engaged .squad-status { color: var(--accent-cyan); }
+
+#squad-list li.covering {
+    color: #ffe2c8;
+}
+#squad-list li.covering .squad-dot {
+    background: var(--accent-orange);
+    box-shadow: 0 0 8px var(--accent-orange);
+}
+#squad-list li.covering .squad-status { color: var(--accent-orange); }
+
+#squad-list li.advancing {
+    color: #cfe8ff;
+}
+#squad-list li.advancing .squad-dot {
+    background: #4da6ff;
+    box-shadow: 0 0 9px #4da6ff;
+    animation: squadAdvance 0.9s infinite alternate;
+}
+#squad-list li.advancing .squad-status { color: #4da6ff; }
+@keyframes squadAdvance {
+    from { transform: translateX(0); opacity: 0.65; }
+    to { transform: translateX(3px); opacity: 1; }
+}
+
+@keyframes squadEngaged {
+    from { opacity: 0.45; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1.15); }
+}
+
+/* =========================================================
+   Barras y HUD críticos
+   ========================================================= */
+.bar-fill.critical {
+    background: var(--accent-red) !important;
+    animation: barCritical 0.55s infinite alternate;
+}
+@keyframes barCritical {
+    from { box-shadow: 0 0 0 rgba(255, 34, 34, 0); }
+    to { box-shadow: 0 0 10px rgba(255, 34, 34, 0.95); }
+}
+
+#hud.critical-battery .hud-telemetry {
+    border-color: rgba(255, 34, 34, 0.7);
+    box-shadow: 0 0 18px rgba(255, 34, 34, 0.35);
+}
+#hud.critical-battery .telemetry-row:nth-child(2) { color: #ff8a8a; }
+
+#hud-score.bump {
+    animation: scoreBump 0.32s ease-out;
+    color: var(--accent-orange);
+    text-shadow: 0 0 16px rgba(255, 94, 0, 0.85);
+}
+@keyframes scoreBump {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.28); }
+    100% { transform: scale(1); }
+}
+
+/* Callouts de escuadrón en el killfeed */
+.kf-item.status {
+    border-right-color: var(--accent-cyan);
+    color: #bdf7ee;
+    font-style: italic;
+    animation: kfSlideIn 0.25s ease-out;
+}
+@keyframes kfSlideIn {
+    from { transform: translateX(18px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Consejo táctico del briefing */
+.tactical-tip {
+    margin-top: 10px;
+    padding: 8px 11px;
+    border-left: 3px solid var(--accent-orange);
+    background: rgba(255, 94, 0, 0.08);
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: #ffc59a;
+    letter-spacing: 0.3px;
+}
+
+/* =========================================================
+   Modales: rejilla animada, título y botones
+   ========================================================= */
+.modal-screen { overflow-y: auto; }
+.modal-content {
+    position: relative;
+    animation: modalRise 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    overflow: hidden;
+}
+.modal-content::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(rgba(0, 255, 102, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 102, 0.045) 1px, transparent 1px);
+    background-size: 34px 34px;
+    mask-image: radial-gradient(circle at 50% 0%, #000 0%, transparent 78%);
+    -webkit-mask-image: radial-gradient(circle at 50% 0%, #000 0%, transparent 78%);
+    animation: gridDrift 12s linear infinite;
+    z-index: 0;
+}
+.modal-content > * { position: relative; z-index: 1; }
+
+@keyframes modalRise {
+    from { transform: translateY(24px) scale(0.97); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes gridDrift {
+    from { background-position: 0 0, 0 0; }
+    to { background-position: 34px 34px, 34px 34px; }
+}
+
+h1 {
+    position: relative;
+    text-shadow: 0 0 26px rgba(255, 94, 0, 0.35);
+    animation: titleGlow 3.2s ease-in-out infinite alternate;
+}
+@keyframes titleGlow {
+    from { text-shadow: 0 0 14px rgba(255, 94, 0, 0.22); }
+    to { text-shadow: 0 0 30px rgba(255, 94, 0, 0.55); }
+}
+
+.header-tag {
+    display: inline-block;
+    padding-bottom: 3px;
+    border-bottom: 1px solid rgba(255, 94, 0, 0.4);
+    animation: tagPulse 2.4s ease-in-out infinite alternate;
+}
+@keyframes tagPulse {
+    from { opacity: 0.7; letter-spacing: 2px; }
+    to { opacity: 1; letter-spacing: 2.8px; }
+}
+
+.control-card {
+    position: relative;
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+.control-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 94, 0, 0.55);
+    background: rgba(26, 31, 33, 0.95);
+}
+
+.btn-tactical {
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 0 rgba(255, 94, 0, 0);
+    transition: background 0.2s ease, box-shadow 0.25s ease, transform 0.12s ease, letter-spacing 0.2s ease;
+}
+.btn-tactical::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: -60%;
+    width: 40%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    transform: skewX(-18deg);
+    animation: btnSheen 3.4s ease-in-out infinite;
+}
+@keyframes btnSheen {
+    0%, 55% { left: -60%; }
+    100% { left: 130%; }
+}
+.btn-tactical:hover {
+    background: #ff7315;
+    box-shadow: 0 0 24px rgba(255, 94, 0, 0.65);
+    letter-spacing: 3px;
+}
+.btn-tactical:active { transform: translateY(1px) scale(0.995); }
+
+.stat-item {
+    transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+.stat-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(0, 255, 102, 0.4);
+    background: rgba(0, 255, 102, 0.05);
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+@media (max-width: 900px) {
+    .hud-box { min-width: 0; padding: 7px 11px; }
+    .hud-box .value { font-size: 1.15rem; }
+    .hud-box .label, .hud-box .sub-label { font-size: 0.58rem; letter-spacing: 0.8px; }
+    #squad-panel { min-width: 0; top: 100px; padding: 6px 9px; }
+    .squad-name { font-size: 0.62rem; }
+    .squad-status { font-size: 0.54rem; }
+    .hud-telemetry { width: 260px; padding: 9px 11px; }
+    .bar-container { width: 92px; }
+    #minimap { width: 118px; height: 118px; }
+    .modal-content { padding: 20px; }
+    h1 { font-size: 1.35rem; }
+    .controls-grid { grid-template-columns: 1fr; }
+    .stats-summary { grid-template-columns: 1fr 1fr; }
+    .d-icon { width: 11px; height: 6px; }
+}
+
+@media (max-width: 620px) {
+    #hud { padding: 10px; }
+    .hud-top { gap: 6px; }
+    .hud-box { padding: 6px 8px; }
+    .hud-box .value { font-size: 1rem; }
+    .hud-box .label { font-size: 0.5rem; }
+    .hud-box .sub-label { font-size: 0.52rem; }
+    .threat-line { display: none; }
+    #squad-panel { display: none; }
+    .hud-telemetry { width: 100%; }
+    .hud-bottom { gap: 8px; }
+    .radar-container { padding: 5px; }
+    #minimap { width: 92px; height: 92px; }
+    .radio-box { padding: 9px 13px; }
+    #radio-text { font-size: 0.8rem; }
+    .stats-summary { grid-template-columns: 1fr; }
+    .trench-box { padding: 13px 15px; }
+    .trench-box h2 { font-size: 0.9rem; }
+    .trench-squad-badge { font-size: 0.6rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .scanlines, .modal-content::before, .btn-tactical::after,
+    h1, .header-tag, #damage-vignette.hit, .bar-fill.critical,
+    .d-icon.current, .threat-line.heavy {
+        animation: none !important;
+    }
+}

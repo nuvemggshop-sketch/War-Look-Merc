@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPV TACTICAL OPS // Asedio en Trinchera</title>
+    <meta name="theme-color" content="#080a0b">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <!-- Capa visual FPV -->
+    <div id="fpv-overlay">
+        <div class="scanlines"></div>
+        <div id="damage-vignette"></div>
+        <div id="static-screen" class="hidden">
+            <div class="static-noise"></div>
+        </div>
+    </div>
+
+    <!-- Transmisión de Radio del Comando (Ubicada en la PARTE INFERIOR, dura más tiempo) -->
+    <div id="radio-transmission" class="hidden">
+        <div class="radio-box">
+            <span class="radio-header">TRANSMISIÓN DE COMANDO // BÚNKER CENTRAL</span>
+            <p id="radio-text">"¡Buen impacto, soldado! Mantén la posición, preparando siguiente FPV..."</p>
+        </div>
+    </div>
+
+    <!-- Cámara de trinchera: el piloto decide cuándo lanzar el siguiente dron -->
+    <div id="trench-prompt" class="hidden">
+        <div class="trench-box">
+            <div class="trench-box-header">
+                <h2>POSICIÓN DE TRINCHERA // BÚNKER DE LANZAMIENTO</h2>
+                <span id="trench-squad-badge" class="trench-squad-badge">ESCUADRÓN 4 / 4</span>
+            </div>
+            <p id="trench-status-msg">Dron anterior destruido. Soldados aliados cubriendo el perímetro.</p>
+            <button id="btn-deploy-next" class="btn-tactical">LANZAR SIGUIENTE DRON FPV (CLIC / ESPACIO / X)</button>
+            <p class="trench-hint">La cámara permanece en la trinchera. Lanza el dron cuando estés listo; el escuadrón sigue combatiendo.</p>
+        </div>
+    </div>
+
+    <!-- Notificaciones de bajas -->
+    <div id="combat-notifications">
+        <div id="kill-banner" class="hidden">
+            <span class="kb-tag">BAJA CONFIRMADA</span>
+            <span id="kb-text">+300 PTS // MERCENARIO ABATIDO</span>
+        </div>
+        <div id="killfeed-list"></div>
+    </div>
+
+    <!-- HUD Táctico -->
+    <div id="hud" class="hidden">
+        <div class="hud-top">
+            <div class="hud-box">
+                <span class="label">TIEMPO DE OPERACIÓN</span>
+                <span id="hud-time" class="value">00:00</span>
+                <span class="sub-label" id="hud-survive-status">RESISTIR: 02:00</span>
+            </div>
+
+            <div class="hud-box center-box">
+                <span class="label">BAJAS / OBJETIVOS</span>
+                <span id="hud-targets" class="value warning">0 / 6</span>
+                <span class="sub-label" id="hud-mission-phase">FASE 1: BARRER TRINCHERAS</span>
+                <span class="sub-label threat-line" id="hud-enemies">HOSTILES ACTIVOS: 18</span>
+            </div>
+
+            <div class="hud-box right-box">
+                <span class="label">DRONES EN RESERVA</span>
+                <div id="drone-stock-icons" class="drone-icons">
+                    <span class="d-icon active"></span>
+                    <span class="d-icon active"></span>
+                    <span class="d-icon active"></span>
+                    <span class="d-icon active"></span>
+                    <span class="d-icon active"></span>
+                    <span class="d-icon active"></span>
+                    <span class="d-icon active"></span>
+                    <span class="d-icon active"></span>
+                </div>
+                <span class="sub-label">DRONES: <strong id="hud-drones">8</strong> // PUNTOS: <strong id="hud-score">0000</strong></span>
+            </div>
+        </div>
+
+        <div id="squad-panel">
+            <div class="squad-header">ESCUADRÓN AMIGO <span id="squad-count">4 / 4</span></div>
+            <ul id="squad-list"></ul>
+        </div>
+
+        <div class="hud-center">
+            <div id="crosshair">
+                <div class="ch-line top"></div>
+                <div class="ch-line bottom"></div>
+                <div class="ch-line left"></div>
+                <div class="ch-line right"></div>
+                <div class="ch-dot"></div>
+            </div>
+            <div id="warning-alert" class="hidden">¡ALERTA: FUEGO HOSTIL EN LA ZONA!</div>
+            <div id="extraction-alert" class="hidden">ZONA DE EXTRACCIÓN ACTIVA - TIERRA FIRME VERDE</div>
+        </div>
+
+        <div class="hud-bottom">
+            <div class="hud-telemetry">
+                <div class="telemetry-row">
+                    <span>CARGA C4:</span>
+                    <div class="bar-container"><div id="bar-hp" class="bar-fill hp"></div></div>
+                    <span id="val-hp">100%</span>
+                </div>
+                <div class="telemetry-row">
+                    <span>BATERÍA LIPO:</span>
+                    <div class="bar-container"><div id="bar-bat" class="bar-fill bat"></div></div>
+                    <span id="val-bat">100%</span>
+                </div>
+                <div class="telemetry-stats">
+                    <div>ALT: <strong id="hud-alt">0.0</strong> m</div>
+                    <div>VEL: <strong id="hud-spd">0</strong> km/h</div>
+                    <div id="hud-gamepad-badge">TECLADO / RATÓN</div>
+                </div>
+            </div>
+
+            <div class="radar-container">
+                <canvas id="minimap" width="150" height="150"></canvas>
+                <span class="radar-label">RADAR TÁCTICO</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de Inicio -->
+    <div id="start-screen" class="modal-screen">
+        <div class="modal-content">
+            <div class="header-tag">PUESTO DE MANDO // DEFENSA DE TRINCHERA</div>
+            <h1>"SOLDADO... ESTÁS PERDIENDO POSICIÓN"</h1>
+            <p class="briefing-text">
+                El perímetro ha colapsado. Los mercenarios avanzan en masa hacia tu búnker y ahora
+                <strong>usan cobertura y línea de visión</strong>: no disparan a través de muros ni del terreno.
+                Tienes <strong>8 drones FPV kamikaze</strong> en reserva y un <strong>escuadrón amigo de 4 soldados</strong>
+                con IA táctica que patrulla, busca cobertura, prioriza amenazas y abre fuego con ráfagas.
+                Cada vez que pierdas una unidad, la cámara retrocederá a la trinchera y podrás desplegar el siguiente FPV manualmente.
+            </p>
+            
+            <div class="mission-objectives">
+                <h3>ÓRDENES DE COMBATE:</h3>
+                <ul>
+                    <li><span class="tag red">1</span> Destruye los <strong>6 puestos fortificados</strong> y abate mercenarios escondidos.</li>
+                    <li><span class="tag orange">2</span> Resiste al menos <strong>2 minutos</strong> bajo asedio en la trinchera.</li>
+                    <li><span class="tag green">3</span> Llega a la <strong>Zona de Extracción</strong> verde con tu último dron.</li>
+                </ul>
+                <p class="squad-note">ESCUADRÓN AMIGO: RÍOS, VEGA, MÉNDEZ y TORRES combaten a tu lado. Si caen, vuelven al frente tras unos segundos.</p>
+                <p class="tactical-tip">CONSEJO TÁCTICO: rompe la línea de visión enemiga usando ruinas, sacos de arena y cráteres. Las balas respetan la física: caen por gravedad y se detienen en los muros.</p>
+            </div>
+
+            <div class="controls-grid">
+                <div class="control-card">
+                    <h4>TECLADO + RATÓN</h4>
+                    <p><strong>W A S D:</strong> Vuelo horizontal</p>
+                    <p><strong>ESPACIO / SHIFT:</strong> Subir / Bajar altitud</p>
+                    <p><strong>RATÓN:</strong> Orientar cámara FPV</p>
+                    <p><strong>CLIC IZQ / F:</strong> Ráfaga táctica / Lanzar dron</p>
+                </div>
+                <div class="control-card">
+                    <h4>MANDO PS4 / DUALSENSE</h4>
+                    <p><strong>Stick Izq / Der:</strong> Mover y mirar</p>
+                    <p><strong>R2 / L2:</strong> Control de altura</p>
+                    <p><strong>Cuadrado (□) / X:</strong> Disparar y desplegar dron</p>
+                </div>
+            </div>
+
+            <div class="gamepad-status-box">
+                <span class="status-dot" id="menu-gp-dot"></span>
+                <span id="menu-gp-text">Buscando mando PS4 / DualSense... (Pulsa cualquier botón)</span>
+            </div>
+
+            <button id="btn-start" class="btn-tactical">ENTRAR A LA TRINCHERA // INICIAR</button>
+        </div>
+    </div>
+
+    <!-- Pantalla Fin de Misión -->
+    <div id="end-screen" class="modal-screen hidden">
+        <div class="modal-content">
+            <div id="end-status-tag" class="header-tag">INFORME FINAL DE COMANDO</div>
+            <h1 id="end-title">MISIÓN CUMPLIDA</h1>
+            <p id="end-reason">Resultado de la defensa.</p>
+            
+            <div class="stats-summary">
+                <div class="stat-item"><span>TIEMPO TOTAL</span><strong id="end-time">00:00</strong></div>
+                <div class="stat-item"><span>OBJETIVOS DESTRUIDOS</span><strong id="end-targets">0/6</strong></div>
+                <div class="stat-item"><span>MERCENARIOS ABATIDOS</span><strong id="end-kills">0</strong></div>
+                <div class="stat-item"><span>DRONES USADOS</span><strong id="end-drones">0 / 8</strong></div>
+                <div class="stat-item"><span>AMIGOS EN PIE</span><strong id="end-allies">4 / 4</strong></div>
+                <div class="stat-item"><span>BAJAS DEL ESCUADRÓN</span><strong id="end-ally-losses">0</strong></div>
+                <div class="stat-item highlight"><span>PUNTUACIÓN TÁCTICA</span><strong id="end-score">0</strong></div>
+            </div>
+
+            <button id="btn-restart" class="btn-tactical">REINICIAR DEFENSA</button>
+        </div>
+    </div>
+
+    <!-- Scripts modulares -->
+    <script src="js/audio.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/trench_view.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/controls.js"></script>
+    <script src="js/drone.js"></script>
+    <script src="js/targets.js"></script>
+    <script src="js/enemies.js"></script>
+    <script src="js/allies.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
